@@ -1,0 +1,641 @@
+{% extends 'base.html' %}
+
+{% block title %}Market - CryptoX{% endblock %}
+
+{% block extra_head %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<style>
+    /* Filter buttons styling */
+    .filter-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 2rem;
+        overflow-x: auto;
+        padding-bottom: 0.5rem;
+    }
+    
+    .filter-btn {
+        background-color: var(--apple-card);
+        border: 1px solid var(--apple-border);
+        color: var(--apple-text);
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    .filter-btn:hover {
+        background-color: var(--apple-hover);
+    }
+    
+    .filter-btn.active {
+        background-color: var(--apple-accent);
+        border-color: var(--apple-accent);
+        color: white;
+    }
+    
+    /* Table styling */
+    .market-card {
+        background-color: var(--apple-card);
+        border: 1px solid var(--apple-border);
+        border-radius: 16px;
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+    
+    .crypto-table {
+        width: 100%;
+        margin-bottom: 0;
+    }
+    
+    .crypto-table th {
+        background-color: rgba(0, 0, 0, 0.2);
+        color: var(--apple-text-secondary);
+        font-weight: 500;
+        font-size: 0.875rem;
+        padding: 1rem;
+        border-bottom: 1px solid var(--apple-border);
+    }
+    
+    .crypto-table td {
+        padding: 1rem;
+        vertical-align: middle;
+        border-bottom: 1px solid var(--apple-border);
+        font-size: 0.95rem;
+    }
+    
+    .crypto-table tr:last-child td {
+        border-bottom: none;
+    }
+    
+    .crypto-table tr:hover {
+        background-color: var(--apple-hover);
+    }
+    
+    .crypto-logo {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: var(--apple-hover);
+        padding: 2px;
+        object-fit: contain;
+    }
+    
+    .crypto-name {
+        font-weight: 500;
+        color: var(--apple-text);
+        text-decoration: none;
+        transition: color 0.2s ease;
+    }
+    
+    .crypto-name:hover {
+        color: var(--apple-accent);
+    }
+    
+    .crypto-symbol {
+        color: var(--apple-text-secondary);
+        font-size: 0.85rem;
+        margin-left: 0.25rem;
+    }
+    
+    .price-change {
+        padding: 0.35rem 0.75rem;
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: 0.85rem;
+        display: inline-block;
+        min-width: 80px;
+        text-align: center;
+    }
+    
+    .price-change.positive {
+        background-color: rgba(48, 209, 88, 0.15);
+        color: var(--apple-success);
+    }
+    
+    .price-change.negative {
+        background-color: rgba(255, 69, 58, 0.15);
+        color: var(--apple-danger);
+    }
+    
+    /* Pagination styling */
+    .pagination-container {
+        display: flex;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+    
+    .pagination {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .page-item {
+        list-style: none;
+    }
+    
+    .page-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: var(--apple-card);
+        border: 1px solid var(--apple-border);
+        color: var(--apple-text);
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+    
+    .page-link:hover {
+        background-color: var(--apple-hover);
+    }
+    
+    .page-item.active .page-link {
+        background-color: var(--apple-accent);
+        border-color: var(--apple-accent);
+        color: white;
+    }
+    
+    .page-item.disabled .page-link {
+        opacity: 0.5;
+        pointer-events: none;
+    }
+    
+    .page-nav-link {
+        width: auto;
+        padding: 0 1rem;
+        border-radius: 20px;
+    }
+    
+    /* Market stats */
+    .market-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background-color: var(--apple-card);
+        border: 1px solid var(--apple-border);
+        border-radius: 12px;
+        padding: 1.25rem;
+    }
+    
+    .stat-label {
+        color: var(--apple-text-secondary);
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-value {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--apple-text);
+    }
+    
+    /* Search and filter section */
+    .search-filter-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        align-items: center;
+    }
+    
+    .market-search {
+        flex: 1;
+        min-width: 250px;
+    }
+    
+    .search-input {
+        background-color: var(--apple-card);
+        border: 1px solid var(--apple-border);
+        color: var(--apple-text);
+        border-radius: 8px;
+        padding: 0.6rem 1rem;
+        width: 100%;
+        transition: all 0.2s ease;
+    }
+    
+    .search-input:focus {
+        border-color: var(--apple-accent);
+        box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.25);
+        outline: none;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .filter-container {
+            justify-content: flex-start;
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+            flex-wrap: nowrap;
+        }
+        
+        .market-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .crypto-table th:nth-child(5),
+        .crypto-table td:nth-child(5),
+        .crypto-table th:nth-child(6),
+        .crypto-table td:nth-child(6) {
+            display: none;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .market-stats {
+            grid-template-columns: 1fr;
+        }
+        
+        .crypto-table th:nth-child(3),
+        .crypto-table td:nth-child(3) {
+            display: none;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="py-5">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="mb-0">Cryptocurrency Market</h2>
+        </div>
+        
+        <!-- Search and Filter Row -->
+        <div class="search-filter-row">
+            <div class="market-search">
+                <input type="text" class="search-input" placeholder="Search cryptocurrency..." id="market-search">
+            </div>
+        </div>
+        
+        <!-- Filter Buttons -->
+        <div class="filter-container" id="filter-buttons">
+            <button class="filter-btn {% if current_sort == 'rank_asc' %}active{% endif %}" data-sort="rank_asc">Rank ↑</button>
+            <button class="filter-btn {% if current_sort == 'rank_desc' %}active{% endif %}" data-sort="rank_desc">Rank ↓</button>
+            <button class="filter-btn {% if current_sort == 'market_cap_desc' %}active{% endif %}" data-sort="market_cap_desc">Market Cap ↓</button>
+            <button class="filter-btn {% if current_sort == 'market_cap_asc' %}active{% endif %}" data-sort="market_cap_asc">Market Cap ↑</button>
+            <button class="filter-btn {% if current_sort == 'price_change_desc' %}active{% endif %}" data-sort="price_change_desc">Price Change ↓</button>
+            <button class="filter-btn {% if current_sort == 'price_change_asc' %}active{% endif %}" data-sort="price_change_asc">Price Change ↑</button>
+            <button class="filter-btn {% if current_sort == 'name_asc' %}active{% endif %}" data-sort="name_asc">Name A-Z</button>
+            <button class="filter-btn {% if current_sort == 'name_desc' %}active{% endif %}" data-sort="name_desc">Name Z-A</button>
+        </div>
+        
+        <!-- Cryptocurrency Table -->
+        <div class="market-card">
+            <div class="table-responsive">
+                <table class="crypto-table" id="crypto-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">Coin</th>
+                            <th scope="col">Price</th>
+                            <th scope="col">24h Change</th>
+                            <th scope="col">Market Cap</th>
+                            <th scope="col">Rank</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for crypto in cryptos %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <img src="{{ crypto.logo_url }}" alt="{{ crypto.name }}" class="crypto-logo me-3" onerror="this.src='/placeholder.svg?height=32&width=32';">
+                                    <div>
+                                        <a href="/crypto/{{ crypto.slug }}/" class="crypto-name">{{ crypto.name }}</a>
+                                        <span class="crypto-symbol">{{ crypto.symbol }}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>${{ crypto.current_price|floatformat:2 }}</td>
+                            <td>
+                                <span class="price-change {% if crypto.price_change_24h > 0 %}positive{% else %}negative{% endif %}">
+                                    {% if crypto.price_change_24h > 0 %}+{% endif %}{{ crypto.price_change_24h|floatformat:2 }}%
+                                </span>
+                            </td>
+                            <td>${{ crypto.market_cap|floatformat:0 }}</td>
+                            <td>{{ crypto.rank|default:"N/A" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5">No cryptocurrencies found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="pagination-container">
+            <ul class="pagination">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link page-nav-link" href="#" data-page="{{ page_obj.previous_page_number }}">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                        Prev
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                    <a class="page-link" href="#" data-page="{{ num }}">{{ num }}</a>
+                </li>
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link page-nav-link" href="#" data-page="{{ page_obj.next_page_number }}">
+                        Next
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<script>
+$(document).ready(function() {
+    // Update the last updated time
+    function updateTime() {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        $('#last-updated').text(`${hours}:${minutes}:${seconds}`);
+    }
+    
+    // Update time every minute
+    setInterval(updateTime, 60000);
+    
+    // Handle filter button clicks
+    $('#filter-buttons button').click(function() {
+        const sort = $(this).data('sort');
+        
+        // Show loading state
+        $('#crypto-table tbody').html('<tr><td colspan="6" class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>');
+        
+        $.ajax({
+            url: window.location.pathname,
+            type: 'GET',
+            data: { sort: sort, page: 1 },
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            success: function(data) {
+                // Update table content
+                $('#crypto-table tbody').empty();
+                if (data.cryptos.length === 0) {
+                    $('#crypto-table tbody').append('<tr><td colspan="6" class="text-center py-5">No cryptocurrencies found.</td></tr>');
+                } else {
+                    $.each(data.cryptos, function(index, crypto) {
+                        const row = `
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <img src="${crypto.logo_url}" alt="${crypto.name}" class="crypto-logo me-3" onerror="this.src='/placeholder.svg?height=32&width=32';">
+                                        <div>
+                                            <a href="/crypto/${crypto.slug}/" class="crypto-name">${crypto.name}</a>
+                                            <span class="crypto-symbol">${crypto.symbol}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>$${parseFloat(crypto.current_price).toFixed(2)}</td>
+                                <td>
+                                    <span class="price-change ${crypto.price_change_24h > 0 ? 'positive' : 'negative'}">
+                                        ${crypto.price_change_24h > 0 ? '+' : ''}${parseFloat(crypto.price_change_24h).toFixed(2)}%
+                                    </span>
+                                </td>
+                                <td>$${parseFloat(crypto.market_cap).toFixed(0)}</td>
+                                <td>${crypto.rank || 'N/A'}</td>
+                            </tr>`;
+                        $('#crypto-table tbody').append(row);
+                    });
+                }
+
+                // Update pagination
+                $('.pagination').empty();
+                if (data.num_pages > 1) {
+                    if (data.has_previous) {
+                        $('.pagination').append(`
+                            <li class="page-item">
+                                <a class="page-link page-nav-link" href="#" data-page="${data.page_number - 1}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                                    Prev
+                                </a>
+                            </li>
+                        `);
+                    }
+                    
+                    for (let i = 1; i <= data.num_pages; i++) {
+                        $('.pagination').append(`
+                            <li class="page-item ${i === data.page_number ? 'active' : ''}">
+                                <a class="page-link" href="#" data-page="${i}">${i}</a>
+                            </li>
+                        `);
+                    }
+                    
+                    if (data.has_next) {
+                        $('.pagination').append(`
+                            <li class="page-item">
+                                <a class="page-link page-nav-link" href="#" data-page="${data.page_number + 1}">
+                                    Next
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                </a>
+                            </li>
+                        `);
+                    }
+                }
+
+                // Update active button
+                $('#filter-buttons button').removeClass('active');
+                $(`#filter-buttons button[data-sort="${sort}"]`).addClass('active');
+
+                // Update URL without reloading
+                history.pushState({}, '', `?sort=${sort}&page=${data.page_number}`);
+                
+                // Update time
+                updateTime();
+            },
+            error: function(xhr) {
+                console.error('Error fetching data:', xhr);
+                $('#crypto-table tbody').html('<tr><td colspan="6" class="text-center py-5">Error loading data. Please try again.</td></tr>');
+            }
+        });
+    });
+
+    // Handle pagination clicks
+    $(document).on('click', '.pagination .page-link', function(e) {
+        e.preventDefault();
+        const page = $(this).data('page');
+        const sort = $('#filter-buttons button.active').data('sort');
+        
+        // Show loading state
+        $('#crypto-table tbody').html('<tr><td colspan="6" class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>');
+        
+        $.ajax({
+            url: window.location.pathname,
+            type: 'GET',
+            data: { sort: sort, page: page },
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            success: function(data) {
+                // Update table content
+                $('#crypto-table tbody').empty();
+                $.each(data.cryptos, function(index, crypto) {
+                    const row = `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <img src="${crypto.logo_url}" alt="${crypto.name}" class="crypto-logo me-3" onerror="this.src='/placeholder.svg?height=32&width=32';">
+                                    <div>
+                                        <a href="/crypto/${crypto.slug}/" class="crypto-name">${crypto.name}</a>
+                                        <span class="crypto-symbol">${crypto.symbol}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>$${parseFloat(crypto.current_price).toFixed(2)}</td>
+                            <td>
+                                <span class="price-change ${crypto.price_change_24h > 0 ? 'positive' : 'negative'}">
+                                    ${crypto.price_change_24h > 0 ? '+' : ''}${parseFloat(crypto.price_change_24h).toFixed(2)}%
+                                </span>
+                            </td>
+                            <td>$${parseFloat(crypto.market_cap).toFixed(0)}</td>
+                            <td>${crypto.rank || 'N/A'}</td>
+                        </tr>`;
+                    $('#crypto-table tbody').append(row);
+                });
+
+                // Update pagination
+                $('.pagination').empty();
+                if (data.num_pages > 1) {
+                    if (data.has_previous) {
+                        $('.pagination').append(`
+                            <li class="page-item">
+                                <a class="page-link page-nav-link" href="#" data-page="${data.page_number - 1}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                                    Prev
+                                </a>
+                            </li>
+                        `);
+                    }
+                    
+                    for (let i = 1; i <= data.num_pages; i++) {
+                        $('.pagination').append(`
+                            <li class="page-item ${i === data.page_number ? 'active' : ''}">
+                                <a class="page-link" href="#" data-page="${i}">${i}</a>
+                            </li>
+                        `);
+                    }
+                    
+                    if (data.has_next) {
+                        $('.pagination').append(`
+                            <li class="page-item">
+                                <a class="page-link page-nav-link" href="#" data-page="${data.page_number + 1}">
+                                    Next
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                </a>
+                            </li>
+                        `);
+                    }
+                }
+
+                history.pushState({}, '', `?sort=${sort}&page=${data.page_number}`);
+                
+                // Update time
+                updateTime();
+            },
+            error: function(xhr) {
+                console.error('Error fetching data:', xhr);
+                $('#crypto-table tbody').html('<tr><td colspan="6" class="text-center py-5">Error loading data. Please try again.</td></tr>');
+            }
+        });
+    });
+    
+    // Handle search functionality
+    $('#market-search').on('input', function() {
+        const searchTerm = $(this).val().toLowerCase();
+        
+        if (searchTerm.length === 0) {
+            // If search is cleared, reset to current sort and page
+            const sort = $('#filter-buttons button.active').data('sort');
+            const currentUrl = new URL(window.location.href);
+            const page = currentUrl.searchParams.get('page') || 1;
+            
+            $.ajax({
+                url: window.location.pathname,
+                type: 'GET',
+                data: { sort: sort, page: page },
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                success: function(data) {
+                    // Update table as in other functions
+                    updateTableWithData(data);
+                }
+            });
+            return;
+        }
+        
+        // Simple client-side filtering for quick feedback
+        $('#crypto-table tbody tr').each(function() {
+            const coinName = $(this).find('.crypto-name').text().toLowerCase();
+            const coinSymbol = $(this).find('.crypto-symbol').text().toLowerCase();
+            
+            if (coinName.includes(searchTerm) || coinSymbol.includes(searchTerm)) {
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
+        });
+        
+        // Check if any rows are visible
+        const visibleRows = $('#crypto-table tbody tr:visible').length;
+        if (visibleRows === 0) {
+            $('#crypto-table tbody').append('<tr id="no-results"><td colspan="6" class="text-center py-5">No cryptocurrencies found matching your search.</td></tr>');
+        } else {
+            $('#no-results').remove();
+        }
+    });
+    
+    // Helper function to update table with data
+    function updateTableWithData(data) {
+        $('#crypto-table tbody').empty();
+        $.each(data.cryptos, function(index, crypto) {
+            const row = `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <img src="${crypto.logo_url}" alt="${crypto.name}" class="crypto-logo me-3" onerror="this.src='/placeholder.svg?height=32&width=32';">
+                            <div>
+                                <a href="/crypto/${crypto.slug}/" class="crypto-name">${crypto.name}</a>
+                                <span class="crypto-symbol">${crypto.symbol}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>$${parseFloat(crypto.current_price).toFixed(2)}</td>
+                    <td>
+                        <span class="price-change ${crypto.price_change_24h > 0 ? 'positive' : 'negative'}">
+                            ${crypto.price_change_24h > 0 ? '+' : ''}${parseFloat(crypto.price_change_24h).toFixed(2)}%
+                        </span>
+                    </td>
+                    <td>$${parseFloat(crypto.market_cap).toFixed(0)}</td>
+                    <td>${crypto.rank || 'N/A'}</td>
+                </tr>`;
+            $('#crypto-table tbody').append(row);
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <!-- Hero Search Section -->
+    <section class="py-5" style="background-color: var(--apple-bg);">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8 text-center">
+                    <h1 class="display-5 fw-bold mb-4" style="background: linear-gradient(90deg, #fff, #0071e3); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                        Discover Crypto Opportunities
+                    </h1>
+                    <p class="lead text-secondary mb-5">Track prices, analyze trends, and find your next investment</p>
+                    
+                    <div class="d-flex justify-content-center gap-3 mt-4">
+                        <span class="badge rounded-pill px-3 py-2" style="background-color: var(--apple-hover); color: var(--apple-text-secondary);">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="me-1"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            Real-time data
+                        </span>
+                        <span class="badge rounded-pill px-3 py-2" style="background-color: var(--apple-hover); color: var(--apple-text-secondary);">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="me-1"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                            Verified sources
+                        </span>
+                        <span class="badge rounded-pill px-3 py-2" style="background-color: var(--apple-hover); color: var(--apple-text-secondary);">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="me-1"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                            Secure trading
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Top Cryptocurrencies Section -->
+    <section class="py-5">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-0 text-white">Top Cryptocurrencies</h2>
+                    <p class="text-secondary mb-0">Real-time market leaders</p>
+                </div>
+                <div class="d-none d-md-block">
+                    <a href="/market" class="btn btn-outline-primary">View All</a>
+                </div>
+            </div>
+            
+            <div class="row g-4">
+                {% for crypto in top_cryptos %}
+                <div class="col-md-4">
+                    <div class="card h-100 border-0" style="background-color: var(--apple-card); border-radius: 16px; overflow: hidden; transition: transform 0.2s ease, box-shadow 0.2s ease;">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="me-3">
+                                    <img src="{{ crypto.logo_url }}" alt="{{ crypto.name }}" width="48" height="48" class="rounded-circle" style="background-color: var(--apple-hover); padding: 4px;" onerror="this.src='/placeholder.svg?height=48&width=48'; this.onerror=null;">
+                                </div>
+                                <div>
+                                    <h5 class="card-title mb-0 text-white">{{ crypto.name }}</h5>
+                                    <span class="text-light">{{ crypto.symbol }}</span>
+
+                                </div>
+                                <div class="ms-auto">
+                                    <span class="badge px-3 py-2 rounded-pill" style="background-color: var(--apple-hover); padding: 4px;">
+                                        {% if crypto.price_change_24h > 0 %}+{% endif %}{{ crypto.price_change_24h|floatformat:2 }}%
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-end mt-4">
+                                <a href="/crypto/{{ crypto.slug }}/" class="btn btn-sm" style="background-color: var(--apple-accent); color: white; border-radius: 20px; padding: 0.5rem 1rem;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="me-1"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                    Details
+                                </a>
+                                <h5 class="card-title mb-0 text-white">${{ crypto.current_price }}</h5>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12 text-center py-5">
+                    <p class="text-light">No cryptocurrencies available at the moment.</p>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="text-center mt-4 d-md-none">
+                <a href="/market" class="btn btn-outline-primary px-4">View All Cryptocurrencies</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Script for home search with keyboard navigation -->
+    <script>
+        $(document).ready(function () {
+            // Search bar autocomplete for both desktop and mobile
+            const setupAutocomplete = ($input, $results) => {
+                $input.on('input', function () {
+                    const query = $(this).val().trim();
+
+                    if (query.length === 0) {
+                        $results.empty().addClass('d-none');
+                        return;
+                    }
+
+                    $.ajax({
+                        url: '{% url "crypto_autocomplete" %}',
+                        data: { query },
+                        dataType: 'json',
+                        success: function (data) {
+                            $results.empty();
+
+                            if (data.results.length === 0) {
+                                $results.addClass('d-none');
+                                return;
+                            }
+
+                            data.results.forEach(crypto => {
+                                const $item = $(`
+                                    <div class="autocomplete-item">
+                                        <img src="${crypto.logo_url}" alt="${crypto.name}" width="28" height="28">
+                                        <div>
+                                            <div class="fw-medium">${crypto.name}</div>
+                                            <div class="text-secondary small">${crypto.symbol}</div>
+                                        </div>
+                                    </div>
+                                `);
+                                $item.on('click', function () {
+                                    window.location.href = `/crypto/${crypto.slug}/`;
+                                });
+                                $results.append($item);
+                            });
+
+                            $results.removeClass('d-none');
+                        }
+                    });
+                });
+
+                // Close autocomplete when clicking outside
+                $(document).on('click', function (e) {
+                    if (!$(e.target).closest($input).length && !$(e.target).closest($results).length) {
+                        $results.addClass('d-none');
+                    }
+                });
+
+                // Handle keyboard navigation
+                $input.on('keydown', function(e) {
+                    if (!$results.is(':visible')) return;
+                    
+                    const items = $results.find('.autocomplete-item');
+                    const current = $results.find('.autocomplete-item.active');
+                    
+                    // Down arrow
+                    if (e.keyCode === 40) {
+                        e.preventDefault();
+                        if (current.length === 0) {
+                            items.first().addClass('active');
+                        } else {
+                            current.removeClass('active');
+                            current.next().addClass('active');
+                        }
+                    }
+                    
+                    // Up arrow
+                    if (e.keyCode === 38) {
+                        e.preventDefault();
+                        if (current.length === 0) {
+                            items.last().addClass('active');
+                        } else {
+                            current.removeClass('active');
+                            current.prev().addClass('active');
+                        }
+                    }
+                    
+                    // Enter
+                    if (e.keyCode === 13 && current.length > 0) {
+                        e.preventDefault();
+                        current.click();
+                    }
+                });
+
+                // Close autocomplete on click outside
+                $(document).on('click', function(e) {
+                    if (!$(e.target).closest('#homeSearch, #homeSearchResults').length) {
+                        $results.addClass('d-none');
+                    }
+                });
+                
+                // Add active class on hover for better UX
+                $(document).on('mouseenter', '.autocomplete-item', function() {
+                    $('.autocomplete-item').removeClass('active');
+                    $(this).addClass('active');
+                });
+            }
+            
+            // Add hover effects to crypto cards
+            $('.card').hover(
+                function() {
+                    $(this).css({
+                        'transform': 'translateY(-8px)',
+                        'box-shadow': '0 12px 24px rgba(0, 0, 0, 0.2)'
+                    });
+                },
+                function() {
+                    $(this).css({
+                        'transform': 'translateY(0)',
+                        'box-shadow': 'none'
+                    });
+                }
+            );
+        });
+    </script>
+{% endblock %}

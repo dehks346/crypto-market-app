@@ -1,0 +1,474 @@
+{% extends 'base.html' %}
+{% block title %}{{ crypto.name }} ({{ crypto.symbol }}) - CryptoX{% endblock %}
+{% block extra_head %}
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <style>
+        :root {
+            --apple-bg: #000000;
+            --apple-card: #1c1c1e;
+            --apple-nav: rgba(28, 28, 30, 0.8);
+            --apple-accent: #0071e3;
+            --apple-text: #f5f5f7;
+            --apple-text-secondary: #86868b;
+            --apple-border: #38383c;
+            --apple-hover: #2c2c2e;
+            --apple-success: #30d158;
+            --apple-danger: #ff453a;
+            --apple-gradient: linear-gradient(110deg, #0071e3, #00a2ff);
+        }
+
+        .crypto-header {
+            background-color: var(--apple-card);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--apple-border);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .crypto-logo {
+            width: 64px;
+            height: 64px;
+            object-fit: contain;
+            border-radius: 12px;
+            background: var(--apple-hover);
+            padding: 4px;
+        }
+
+        .price-text {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: var(--apple-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.025em;
+        }
+
+        .price-change {
+            font-weight: 600;
+            padding: 0.35rem 0.75rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .price-change.positive {
+            background-color: rgba(48, 209, 88, 0.15);
+            color: var(--apple-success);
+        }
+
+        .price-change.negative {
+            background-color: rgba(255, 69, 58, 0.15);
+            color: var(--apple-danger);
+        }
+
+        .stats-card {
+            background-color: var(--apple-card);
+            border: 1px solid var(--apple-border);
+            border-radius: 16px;
+            padding: 1.75rem;
+            height: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .stats-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+        }
+
+        .chart-container {
+            background-color: var(--apple-card);
+            border-radius: 16px;
+            padding: 1.75rem;
+            border: 1px solid var(--apple-border);
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-tab {
+            background: transparent;
+            border: 1px solid var(--apple-border);
+            color: var(--apple-text-secondary);
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .chart-tab.active {
+            background-color: var(--apple-accent);
+            border-color: var(--apple-accent);
+            color: white;
+        }
+
+        .chart-tab:hover:not(.active) {
+            background-color: var(--apple-hover);
+            color: var(--apple-text);
+        }
+
+        #price-chart {
+            width: 100% !important;
+            height: 350px !important;
+            max-width: 100%;
+            max-height: 350px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .info-text {
+            color: var(--apple-text);
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .info-label {
+            color: var(--apple-text-secondary);
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .countdown-container {
+            display: inline-flex;
+            align-items: center;
+            background-color: var(--apple-hover);
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            gap: 0.5rem;
+        }
+
+        .pulse {
+            width: 8px;
+            height: 8px;
+            background-color: var(--apple-accent);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.7; }
+            50% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.7; }
+        }
+
+        .countdown-text {
+            color: var(--apple-text-secondary);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .additional-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .stat-item {
+            background-color: var(--apple-hover);
+            border-radius: 12px;
+            padding: 1rem;
+        }
+
+        .actions-container {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background-color: var(--apple-card);
+            border: 1px solid var(--apple-border);
+            border-radius: 12px;
+            padding: 0.75rem 1.25rem;
+            color: var(--apple-text);
+            font-weight: 500;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .action-btn:hover {
+            background-color: var(--apple-hover);
+            transform: translateY(-2px);
+        }
+
+        .action-btn.primary {
+            background-color: var(--apple-accent);
+            border-color: var(--apple-accent);
+            color: white;
+        }
+
+        .action-btn.primary:hover {
+            background-color: #0062c4;
+        }
+
+        .modal-content {
+            background-color: var(--apple-card);
+            border: 1px solid var(--apple-border);
+            color: var(--apple-text);
+        }
+
+        .modal-header, .modal-footer {
+            border-color: var(--apple-border);
+        }
+
+        .share-option {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem;
+            border-radius: 8px;
+            color: var(--apple-text);
+            text-decoration: none;
+            transition: background-color 0.2s ease;
+        }
+
+        .share-option:hover {
+            background-color: var(--apple-hover);
+        }
+
+        @media (max-width: 768px) {
+            .price-text { font-size: 2rem; }
+            .crypto-logo { width: 48px; height: 48px; }
+            .crypto-header { padding: 1.5rem; }
+            #price-chart { height: 300px !important; }
+            .actions-container { flex-direction: column; }
+        }
+    </style>
+{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="crypto-header">
+        <div class="d-flex flex-column flex-md-row align-items-md-center gap-4">
+            <img src="{{ crypto.logo_url }}" alt="{{ crypto.name }}" class="crypto-logo">
+            <div class="w-100">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                    <div>
+                        <h1 class="mb-1">{{ crypto.name }} <span class="text-secondary">({{ crypto.symbol }})</span></h1>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="price-change {% if price_change_24h > 0 %}positive{% else %}negative{% endif %}">
+                                {% if price_change_24h > 0 %}+{% endif %}{{ price_change_24h|floatformat:2 }}%
+                            </span>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-column align-items-md-end">
+                        <span class="price-text">$<span id="price">{{ price|floatformat:8 }}</span></span>
+                        <div class="countdown-container mt-2">
+                            <div class="pulse"></div>
+                            <span class="countdown-text">Live • Updated <span id="last-updated">{{ last_updated|date:"H:i:s" }}</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="actions-container">
+            <a href="/trade/{{ crypto.symbol|lower }}" class="action-btn primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-6M6 20V10M18 20V4"></path></svg>
+                Trade
+            </a>
+            <a href="#" class="action-btn" data-bs-toggle="modal" data-bs-target="#watchlistModal">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                Add to Watchlist
+            </a>
+            <a href="#" class="action-btn share-btn" data-bs-toggle="modal" data-bs-target="#shareModal" data-coin-name="{{ crypto.name }}" data-coin-symbol="{{ crypto.symbol }}" data-price="{{ price|floatformat:2 }}" data-rank="{{ ranking }}" data-slug="{{ crypto.slug }}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
+                Share
+            </a>
+        </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div class="modal fade" id="shareModal" tabindex="-1" aria-labelledby="shareModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="shareModalLabel">Share {{ crypto.name }}</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Share this coin via email!</p>
+                    <div class="d-flex flex-column gap-2">
+                        <a href="#" id="emailShare" class="share-option">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                            Share via Email
+                        </a>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart Container -->
+    <div class="chart-container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="mb-0">Price Chart</h3>
+        </div>
+        <div id="price-chart">
+            {{ graph_html|safe }}
+        </div>
+    </div>
+
+    <!-- Key Statistics -->
+    <h3 class="mb-4">Key Statistics</h3>
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="stats-card">
+                <div class="info-label">Market Cap</div>
+                <p class="info-text mb-0">${{ market_cap }}</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stats-card">
+                <div class="info-label">24h Price Change</div>
+                <p class="info-text mb-0">${{ price_change_24h|floatformat:2 }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+    const updateInterval = 60; // seconds
+    const slug = "{{ crypto.slug }}";
+    let lastUpdated = new Date("{{ last_updated|date:'c' }}");
+
+    // Update countdown every second
+    function updateCountdown() {
+        const now = new Date();
+        const secondsSince = Math.floor((now - lastUpdated) / 1000);
+        const countdown = updateInterval - (secondsSince % updateInterval);
+        document.getElementById('countdown').textContent = countdown;
+        
+        if (countdown <= 5) {
+            document.querySelector('.pulse').style.animation = 'pulse 0.8s infinite';
+        } else {
+            document.querySelector('.pulse').style.animation = 'pulse 2s infinite';
+        }
+    }
+
+    // Fetch the latest price and timestamp using AJAX
+    async function fetchPrice() {
+        try {
+            const res = await fetch(`/api/price/${slug}/`);
+            const data = await res.json();
+
+            if (data.price !== null) {
+                const oldPrice = parseFloat(document.getElementById('price').textContent);
+                const newPrice = data.price;
+                
+                if (newPrice > oldPrice) {
+                    document.getElementById('price').style.color = 'var(--apple-success)';
+                } else if (newPrice < oldPrice) {
+                    document.getElementById('price').style.color = 'var(--apple-danger)';
+                }
+                
+                document.getElementById('price').textContent = newPrice.toFixed(8);
+                
+                setTimeout(() => {
+                    document.getElementById('price').style.color = '';
+                }, 1000);
+            }
+
+            if (data.last_updated !== null) {
+                lastUpdated = new Date(data.last_updated * 1000);
+                document.getElementById('last-updated').textContent = lastUpdated.toLocaleTimeString();
+            }
+        } catch (error) {
+            console.error('Error fetching price:', error);
+        }
+    }
+
+    // Resize chart on window resize
+    function resizeChart() {
+        const chartContainer = document.getElementById('price-chart');
+        if (chartContainer && window.Plotly) {
+            Plotly.Plots.resize(chartContainer);
+        }
+    }
+
+    // Handle chart time period tabs
+    document.querySelectorAll('.chart-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            document.querySelectorAll('.chart-tab').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            
+            const chartContainer = document.getElementById('price-chart');
+            chartContainer.innerHTML = '<div class="d-flex justify-content-center align-items-center h-100"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+            
+            setTimeout(() => {
+                chartContainer.innerHTML = '{{ graph_html|safe }}';
+                if (window.Plotly) {
+                    Plotly.Plots.resize(chartContainer);
+                }
+            }, 800);
+        });
+    });
+
+    // Share modal functionality
+    const shareModal = document.getElementById('shareModal');
+    shareModal.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const coinName = button.dataset.coinName;
+        const coinSymbol = button.dataset.coinSymbol;
+        const price = button.dataset.price;
+        const rank = button.dataset.rank;
+        const slug = button.dataset.slug;
+        const detailUrl = `${window.location.origin}/crypto/${slug}/`;
+        const shareText = `${coinName} (${coinSymbol}) - Price: $${price}, Rank: #${rank} on CryptoX! Check it out: ${detailUrl}`;
+
+        // Update modal title
+        const modalTitle = shareModal.querySelector('.modal-title');
+        modalTitle.textContent = `Share ${coinName}`;
+
+        // Update email share link
+        const emailShare = document.getElementById('emailShare');
+        emailShare.href = `mailto:?subject=Check out ${encodeURIComponent(coinName)} on CryptoX&body=${encodeURIComponent(shareText)}`;
+    });
+
+    // Log email share click
+    document.getElementById('emailShare').addEventListener('click', function(e) {
+        fetch('/api/log-share/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({ slug: '{{ crypto.slug }}', platform: 'email' })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error('Share logging error:', data.error);
+            }
+        })
+        .catch(err => {
+            console.error('Error logging share:', err);
+        });
+    });
+
+    // Initialize countdown and set intervals
+    updateCountdown();
+    setInterval(fetchPrice, updateInterval * 1000);
+    setInterval(updateCountdown, 1000);
+
+    // Add resize listener for responsive charts
+    window.addEventListener('resize', resizeChart);
+</script>
+{% endblock %}
